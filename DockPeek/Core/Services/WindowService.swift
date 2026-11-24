@@ -8,8 +8,11 @@ enum WindowService {
     static func windows(of app: NSRunningApplication) -> [AppWindow] {
         let element = AXUIElementCreateApplication(app.processIdentifier)
         return AX.elements(element, kAXWindowsAttribute).compactMap { window in
+            let isMinimized = AX.attribute(window, kAXMinimizedAttribute, as: Bool.self) ?? false
+            let subrole = AX.attribute(window, kAXSubroleAttribute, as: String.self)
+            // Minimized windows report the subrole AXDialog instead of AXStandardWindow.
             guard AX.attribute(window, kAXRoleAttribute, as: String.self) == kAXWindowRole,
-                  AX.attribute(window, kAXSubroleAttribute, as: String.self) == kAXStandardWindowSubrole,
+                  subrole == kAXStandardWindowSubrole || isMinimized,
                   let id = AX.windowID(window),
                   let size = AX.size(window), size.width > 40, size.height > 40
             else { return nil }
@@ -18,7 +21,7 @@ enum WindowService {
                 id: id,
                 title: title.isEmpty ? (app.localizedName ?? "") : title,
                 size: size,
-                isMinimized: AX.attribute(window, kAXMinimizedAttribute, as: Bool.self) ?? false,
+                isMinimized: isMinimized,
                 element: window
             )
         }

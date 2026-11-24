@@ -81,7 +81,7 @@ final class PreviewViewModel {
 
     private func show(_ item: DockItem) {
         let windows = WindowService.windows(of: item.app)
-        log.debug("Show \(item.app.localizedName ?? "?"): \(windows.count) windows")
+        log.debug("Show \(item.app.localizedName ?? "?", privacy: .public): \(windows.count) windows")
         guard !windows.isEmpty else {
             hide()
             return

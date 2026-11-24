@@ -12,6 +12,13 @@ struct DockPeekApp: App {
             DispatchQueue.main.async { preview.showDemo() }
             return
         }
+        // -DockPeekDump <bundle id>: logs what DockPeek sees of that app's windows.
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "-DockPeekDump"), index + 1 < arguments.count,
+           let app = NSRunningApplication.runningApplications(withBundleIdentifier: arguments[index + 1]).first {
+            let windows = WindowService.windows(of: app)
+            log.info("Dump: \(windows.count) windows, minimized \(windows.filter(\.isMinimized).count)")
+        }
         #endif
         preview.start()
     }
