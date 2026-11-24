@@ -1,5 +1,0 @@
-// Copy this file to Config.xcconfig (git-ignored) and fill in your values.
-
-// Apple Developer Team ID. Required for a stable code signature:
-// without it macOS forgets the Accessibility permission after every build.
-DEVELOPMENT_TEAM =

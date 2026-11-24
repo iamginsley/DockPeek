@@ -2,14 +2,10 @@ name: DockPeek
 options:
   bundleIdPrefix: com.iamginsley
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "26.0"
   developmentLanguage: de
   createIntermediateGroups: true
   groupSortPosition: top
-
-configFiles:
-  Debug: Configs/Project.xcconfig
-  Release: Configs/Project.xcconfig
 
 settings:
   base:
@@ -18,8 +14,8 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     SWIFT_EMIT_LOC_STRINGS: YES
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: 2567P974L9
+    CODE_SIGN_STYLE: Automatic
 
 targets:
   DockPeek:
@@ -27,17 +23,6 @@ targets:
     platform: macOS
     sources:
       - path: DockPeek
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.iamginsley.dockpeek
-        ENABLE_HARDENED_RUNTIME: YES
-        CODE_SIGN_STYLE: Automatic
-        COMBINE_HIDPI_IMAGES: YES
-    entitlements:
-      path: DockPeek/Resources/DockPeek.entitlements
-      properties:
-        # Accessibility + Dock observation do not work inside the App Sandbox.
-        com.apple.security.app-sandbox: false
     info:
       path: DockPeek/Resources/Info.plist
       properties:
@@ -47,8 +32,39 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSApplicationCategoryType: public.app-category.utilities
-        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
-        # Menu bar only: no Dock icon, no main menu.
         LSUIElement: true
-        NSHumanReadableCopyright: "© 2026 iamginsley"
-    scheme: {}
+        NSHumanReadableCopyright: "© 2026 Dominik Gintsberger"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.iamginsley.dockpeek
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        # Reading other apps' windows through Accessibility does not work in the App Sandbox,
+        # so DockPeek ships outside the Mac App Store (Developer ID, notarized).
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  DockPeekTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: DockPeekTests
+    dependencies:
+      - target: DockPeek
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/DockPeek.app/Contents/MacOS/DockPeek"
+
+schemes:
+  DockPeek:
+    build:
+      targets:
+        DockPeek: all
+        DockPeekTests: [test]
+    run:
+      config: Debug
+    test:
+      targets: [DockPeekTests]

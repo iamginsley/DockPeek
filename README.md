@@ -1,90 +1,46 @@
 # DockPeek
 
-Windows-artige Fenstervorschau für das macOS-Dock: Fährst du mit der Maus über ein
-Programm im Dock, zeigt DockPeek Vorschaubilder aller Fenster dieses Programms.
+Menu bar app for macOS that brings the Windows taskbar's window previews to the Dock: hover over an app icon and DockPeek shows all of that app's windows as thumbnails. Click one to bring it forward (minimized windows are restored), × or a middle-click closes it. Clicking the Dock icon of the app already in front minimizes its front window, like the Windows taskbar.
 
-| Aktion | Wirkung |
-|---|---|
-| Über Dock-Icon hovern | Vorschau aller Fenster (inkl. minimierter) |
-| Klick auf Vorschau | Genau dieses Fenster nach vorne holen (auch aus dem Dock/minimiert) |
-| `×` auf der Vorschau | Fenster schließen |
-| Mittelklick auf Vorschau | Fenster schließen |
-| Klick irgendwo anders / Maus weg | Vorschau ausblenden |
+## How it works
 
-Funktioniert mit dem Dock unten, links und rechts sowie auf mehreren Bildschirmen.
-DockPeek läuft als Menüleisten-App (kein eigenes Dock-Icon).
+- `DockObserver` watches the Dock through Accessibility. The Dock marks the icon under the pointer as the selected child of its icon list and posts `kAXSelectedChildrenChangedNotification`, so there is no mouse polling while idle.
+- `WindowService` lists the app's standard windows (`kAXWindowsAttribute`, current Space, minimized included) and maps them to window server IDs with `_AXUIElementGetWindow`.
+- `ThumbnailService` captures thumbnails with ScreenCaptureKit and keeps the last image per window, so minimized windows still show their content once seen.
+- `PreviewPanel` is a non-activating, borderless panel above the Dock level; the app in front keeps focus. While it is visible a 30 Hz timer hides it once the pointer has left the icon and the panel for 250 ms; any click elsewhere dismisses it.
+- `ClickToMinimize` watches clicks on the Dock and judges them by the state at press time (app was already in front, window was open), since global mouse events arrive late.
+- `PreviewLayout` (pure, unit-tested) finds the Dock edge and places the panel above or beside the icon, kept on screen.
 
-## Voraussetzungen
+Permissions: **Accessibility** (required; picked up without a restart) and **Screen Recording** (thumbnails; without it the preview shows titles and app icons). Both make the App Sandbox and the Mac App Store impossible, so DockPeek ships signed with Developer ID and notarized.
 
-- macOS 14 (Sonoma) oder neuer
-- Xcode 16+
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
+Known limits of v0.1: windows on other Spaces are not listed (Accessibility only returns the current Space).
 
-## Loslegen
+## Design
 
-```bash
-cp Config.example.xcconfig Config.xcconfig   # DEVELOPMENT_TEAM eintragen
+Clean like Apple's own utilities. The preview uses Liquid Glass (`glassEffect`) since it floats; cards highlight on hover, the close button turns red on hover like in Windows. Colors are system colors; accent is system blue.
+
+## Project structure
+
+```
+DockPeek/
+  App/                 app entry, MenuBarExtra
+  Core/Models/         AppWindow, DockItem, PreviewLayout (pure logic)
+  Core/Services/       Accessibility helpers, Dock observer, windows, thumbnails, permissions, login item
+  Core/Demo/           sample windows for -DockPeekDemo (Debug only)
+  Features/Preview/    preview panel, view, view model
+  Features/Settings/   menu bar panel
+  Resources/           assets, Info.plist, privacy manifest
+DockPeekTests/         layout tests
+docs/                  privacy policy
+```
+
+## Build
+
+```sh
 xcodegen generate
 open DockPeek.xcodeproj
 ```
 
-Dann in Xcode **Run** (⌘R).
+Tests: `xcodebuild -project DockPeek.xcodeproj -scheme DockPeek test`
 
-> **Wichtig: Signierung.** macOS bindet die Bedienungshilfen-Berechtigung an die
-> Code-Signatur. Ohne `DEVELOPMENT_TEAM` (ad-hoc signiert) musst du die Berechtigung
-> nach jedem Build neu erteilen. Ein kostenloser Apple-Account als Team reicht.
-
-## Berechtigungen
-
-Beim ersten Start fragt DockPeek nach:
-
-1. **Bedienungshilfen** (erforderlich) – um das Dock zu beobachten und Fenster anderer
-   Apps aufzulisten, nach vorne zu holen und zu schließen.
-2. **Bildschirmaufnahme** (optional) – für die Vorschaubilder. Ohne diese Berechtigung
-   zeigt DockPeek Fenstertitel mit App-Icon.
-
-Beides findest du unter *Systemeinstellungen → Datenschutz & Sicherheit*, oder über das
-Menüleisten-Icon von DockPeek.
-
-## Wie es funktioniert
-
-```
-Dock (AX)  ──AXSelectedChildrenChanged──▶  DockObserver
-                                               │ DockItem (App + Icon-Frame)
-                                               ▼
-                                       PreviewCoordinator ──▶ WindowProvider (AX-Fensterliste)
-                                               │          ──▶ ThumbnailService (ScreenCaptureKit)
-                                               ▼
-                                   PreviewPanel (NSPanel + SwiftUI)
-                                               │ Klick / ×
-                                               ▼
-                                         WindowActions (AXRaise / AXPress)
-```
-
-- **Hover-Erkennung:** Das Dock meldet über die Accessibility-API, welches Icon gerade
-  „ausgewählt“ ist, während die Maus darüber fährt. Es wird also nichts gepollt, solange
-  keine Vorschau offen ist.
-- **Fensterliste:** `kAXWindowsAttribute` der App. Die Zuordnung zur `CGWindowID` passiert
-  über die private, aber seit Jahren stabile Funktion `_AXUIElementGetWindow` (wie bei
-  AltTab, Rectangle, DockDoor).
-- **Vorschaubilder:** `SCScreenshotManager` (macOS 14+). Minimierte Fenster zeigen ihr
-  letztes bekanntes Bild aus dem Cache.
-- **Kein App Store:** Dock-Beobachtung und Fenstersteuerung funktionieren nicht in der
-  App-Sandbox. Verteilung als signierte, notarisierte App außerhalb des App Stores.
-
-## Bekannte Einschränkungen (MVP)
-
-- Nur Fenster auf dem **aktuellen Space** (plus minimierte). Fenster auf anderen Spaces oder
-  in Vollbild-Spaces werden noch nicht angezeigt.
-- Bei sehr vielen Fenstern werden nur so viele gezeigt, wie auf den Bildschirm passen
-  (noch kein Scrollen).
-- Minimierte Fenster haben erst dann ein Vorschaubild, wenn DockPeek sie einmal sichtbar
-  gesehen hat.
-
-## Roadmap
-
-- [ ] Fenster anderer Spaces/Vollbild
-- [ ] Einstellungen (Verzögerung, Vorschaugröße)
-- [ ] Klick auf aktives Dock-Icon minimiert (Windows-Verhalten)
-- [ ] Alt+Tab pro Fenster
-- [ ] Snap / Fenster an den Rand ziehen
+Demo (Debug): launch with `-DockPeekDemo` to show sample previews above the bottom center of the main screen.
