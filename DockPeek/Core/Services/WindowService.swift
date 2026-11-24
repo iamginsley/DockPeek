@@ -17,10 +17,14 @@ enum WindowService {
                   let size = AX.size(window), size.width > 40, size.height > 40
             else { return nil }
             let title = AX.attribute(window, kAXTitleAttribute, as: String.self) ?? ""
+            let frame = AX.frame(window).flatMap { rect in
+                NSScreen.screens.first.map { PreviewLayout.cocoaRect(fromAccessibility: rect, primaryScreenHeight: $0.frame.height) }
+            }
             return AppWindow(
                 id: id,
                 title: title.isEmpty ? (app.localizedName ?? "") : title,
                 size: size,
+                frame: frame,
                 isMinimized: isMinimized,
                 element: window
             )

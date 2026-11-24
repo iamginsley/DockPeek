@@ -7,23 +7,17 @@ import SwiftUI
 @MainActor
 @Observable
 final class PreviewViewModel {
-    /// Hover delay before the first preview, so passing over the Dock does not flash panels.
-    static let showDelay: Duration = .milliseconds(200)
+    /// How long the pointer rests on a thumbnail before Aero Peek starts.
+    static let peekDelay: Duration = .milliseconds(400)
     /// How long the pointer may be outside icon and panel before the preview hides.
     static let hideDelay: TimeInterval = 0.25
 
     private(set) var isRunning = false
 
-    var isEnabled: Bool {
-        get { access(keyPath: \.isEnabled); return defaults.object(forKey: Self.enabledKey) as? Bool ?? true }
-        set {
-            withMutation(keyPath: \.isEnabled) { defaults.set(newValue, forKey: Self.enabledKey) }
-            if !newValue { hide() }
-        }
-    }
-
-    @ObservationIgnored private let defaults = UserDefaults.standard
+    @ObservationIgnored private let preferences: Preferences
     @ObservationIgnored private let dock: DockObserver
+    @ObservationIgnored private let peek = PeekOverlay()
+    @ObservationIgnored private var peekTask: Task<Void, Never>?
     @ObservationIgnored private let thumbnailService = ThumbnailService()
     @ObservationIgnored private let panel = PreviewPanel()
     @ObservationIgnored private var item: DockItem?
@@ -37,10 +31,17 @@ final class PreviewViewModel {
     @ObservationIgnored private var accessTimer: Timer?
     @ObservationIgnored private var isDemo = false
 
-    private static let enabledKey = "previewEnabled"
-
-    init(dock: DockObserver) {
+    init(dock: DockObserver, preferences: Preferences) {
         self.dock = dock
+        self.preferences = preferences
+    }
+
+    /// Applies settings that need more than a check at use time.
+    func applyPreferences() {
+        if !preferences.isPreviewEnabled { hide() }
+        thumbnailService.setBackgroundCapture(isRunning && preferences.isBackgroundCaptureEnabled) { [weak self] in
+            self?.preferences.thumbnailSize.box ?? ThumbnailSize.medium.box
+        }
     }
 
     /// Starts watching the Dock once Accessibility is granted.
@@ -63,12 +64,13 @@ final class PreviewViewModel {
         dock.onHover = { [weak self] item in self?.hovered(item) }
         dock.start()
         isRunning = true
+        applyPreferences()
     }
 
     // MARK: - Hover
 
     private func hovered(_ item: DockItem?) {
-        guard isEnabled, !isDemo else { return }
+        guard preferences.isPreviewEnabled, !isDemo else { return }
         showTask?.cancel()
         // Leaving the icons is handled by the tracking timer, so the pointer can move to the panel.
         guard let item else { return }
@@ -79,7 +81,7 @@ final class PreviewViewModel {
             return
         }
         showTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.showDelay)
+            try? await Task.sleep(for: .seconds(self?.preferences.previewDelay ?? 0.2))
             guard !Task.isCancelled, let self else { return }
             self.show(item)
         }
@@ -95,12 +97,14 @@ final class PreviewViewModel {
         self.item = item
         let screen = NSScreen.screens.first { $0.frame.intersects(item.frame) } ?? NSScreen.main
         let maxWidth = (screen?.frame.width ?? 1440) - PreviewLayout.margin * 2
+        let box = preferences.thumbnailSize.box
         content = PreviewContent(
             appIcon: item.app.icon,
-            rows: PreviewView.rows(for: windows, maxWidth: maxWidth),
+            rows: PreviewView.rows(for: windows, in: box, maxWidth: maxWidth),
             thumbnails: Dictionary(uniqueKeysWithValues: windows.compactMap { window in
                 thumbnailService.cached(window.id).map { (window.id, $0) }
-            })
+            }),
+            box: box
         )
         panel.show(view, near: item.frame)
         startTracking()
@@ -111,7 +115,7 @@ final class PreviewViewModel {
     private func loadThumbnails(for windows: [AppWindow], of app: NSRunningApplication) {
         Task { [weak self] in
             guard let self else { return }
-            let images = await thumbnailService.capture(windows, pointSize: PreviewView.thumbnailSize(for:))
+            let images = await thumbnailService.capture(windows, in: self.content.box)
             guard self.item?.app == app, self.panel.isVisible, !images.isEmpty else { return }
             self.content.thumbnails.merge(images) { $1 }
             self.panel.update(self.view)
@@ -128,8 +132,10 @@ final class PreviewViewModel {
                 // Leaving one card and entering the next can arrive in either order.
                 if isHovered {
                     self.hoveredWindowID = id
+                    self.schedulePeek(at: id)
                 } else if self.hoveredWindowID == id {
                     self.hoveredWindowID = nil
+                    self.endPeek()
                 }
             }
         )
@@ -162,6 +168,31 @@ final class PreviewViewModel {
         return true
     }
 
+    // MARK: - Aero Peek
+
+    private func schedulePeek(at id: CGWindowID) {
+        peekTask?.cancel()
+        guard preferences.isPeekEnabled,
+              let window = content.rows.joined().first(where: { $0.id == id })
+        else { return }
+        peekTask = Task { [weak self] in
+            // Already peeking: move to the next window without waiting again.
+            if self?.peek.isVisible != true {
+                try? await Task.sleep(for: Self.peekDelay)
+            }
+            guard !Task.isCancelled, let self else { return }
+            let image = await self.thumbnailService.captureFullSize(window) ?? self.thumbnailService.cached(window.id)
+            guard !Task.isCancelled, self.hoveredWindowID == id, self.panel.isVisible else { return }
+            self.peek.show(image, frame: window.frame)
+        }
+    }
+
+    private func endPeek() {
+        peekTask?.cancel()
+        peekTask = nil
+        peek.hide()
+    }
+
     // MARK: - Tracking
 
     private func startTracking() {
@@ -174,7 +205,9 @@ final class PreviewViewModel {
         if middleClickMonitor == nil {
             // Middle-click on a thumbnail closes that window, like in the Windows taskbar.
             middleClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .otherMouseDown) { [weak self] event in
-                guard event.buttonNumber == 2 else { return event }
+                guard event.buttonNumber == 2,
+                      MainActor.assumeIsolated({ self?.preferences.isMiddleClickCloseEnabled == true })
+                else { return event }
                 let handled = MainActor.assumeIsolated { self?.closeHoveredWindow() ?? false }
                 return handled ? nil : event
             }
@@ -214,6 +247,7 @@ final class PreviewViewModel {
         if let middleClickMonitor { NSEvent.removeMonitor(middleClickMonitor) }
         middleClickMonitor = nil
         hoveredWindowID = nil
+        endPeek()
         item = nil
         outsideSince = nil
         panel.hide()
@@ -227,10 +261,12 @@ final class PreviewViewModel {
         isDemo = true
         guard let screen = NSScreen.main else { return }
         let windows = DemoData.windows
+        let box = preferences.thumbnailSize.box
         content = PreviewContent(
             appIcon: NSWorkspace.shared.icon(forFile: "/System/Applications/Notes.app"),
-            rows: PreviewView.rows(for: windows, maxWidth: screen.frame.width - PreviewLayout.margin * 2),
-            thumbnails: DemoData.thumbnails(for: windows, size: PreviewView.thumbnailSize(for:))
+            rows: PreviewView.rows(for: windows, in: box, maxWidth: screen.frame.width - PreviewLayout.margin * 2),
+            thumbnails: DemoData.thumbnails(for: windows) { PreviewView.thumbnailSize(for: $0, in: box) },
+            box: box
         )
         let icon = CGRect(x: screen.frame.midX - 32, y: screen.frame.minY + 4, width: 64, height: 64)
         panel.show(view, near: icon)

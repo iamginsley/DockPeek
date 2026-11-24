@@ -6,6 +6,8 @@ struct AppWindow: Identifiable {
     let id: CGWindowID
     let title: String
     let size: CGSize
+    /// Window frame in Cocoa screen coordinates, for Aero Peek. Nil when unknown.
+    var frame: CGRect? = nil
     let isMinimized: Bool
     /// Nil for demo windows.
     let element: AXUIElement?

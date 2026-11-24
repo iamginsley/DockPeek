@@ -7,11 +7,11 @@ DockPeek läuft ausschließlich auf deinem Mac. Die App sammelt keine Daten, hat
 ## Berechtigungen
 
 - **Bedienungshilfen:** DockPeek erkennt damit, über welchem Dock-Symbol der Mauszeiger ist, liest die Fenster der jeweiligen App (Titel, Größe) und holt Fenster nach vorn oder schließt sie, wenn du das in der Vorschau auswählst.
-- **Bildschirm- und Systemaudioaufnahme:** DockPeek erstellt damit kleine Vorschaubilder der Fenster. Die Bilder bleiben nur im Arbeitsspeicher, werden nicht gespeichert und verlassen deinen Mac nie. Ton wird nicht aufgenommen.
+- **Bildschirm- und Systemaudioaufnahme:** DockPeek erstellt damit Vorschaubilder der Fenster und das Bild für Aero Peek. Ist „Inhalt minimierter Fenster zeigen“ eingeschaltet, nimmt DockPeek dafür alle paar Sekunden die Fenster der aktiven App auf. Die Bilder bleiben nur im Arbeitsspeicher, werden nicht gespeichert und verlassen deinen Mac nie. Ton wird nicht aufgenommen.
 
 ## Einstellungen
 
-DockPeek speichert lokal, ob die Fenster-Vorschau eingeschaltet ist.
+DockPeek speichert lokal deine Einstellungen (welche Funktionen eingeschaltet sind, Verzögerung, Größe der Vorschaubilder).
 
 ## Kontakt
 
