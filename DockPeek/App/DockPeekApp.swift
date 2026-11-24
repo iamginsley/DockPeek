@@ -47,7 +47,8 @@ private struct MenuBarLabel: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        Image(systemName: "rectangle.on.rectangle")
+        // Three windows fanning out of a Dock icon, like the app icon (template image).
+        Image(.menuBarIcon)
             .accessibilityLabel("DockPeek")
             .onAppear {
                 #if DEBUG
