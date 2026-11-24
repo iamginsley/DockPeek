@@ -34,8 +34,18 @@ DockPeek/
   Features/Settings/   menu bar panel, settings window, shared view model
   Resources/           assets, Info.plist, privacy manifest
 DockPeekTests/         layout tests
-docs/                  privacy policy
+docs/                  privacy policy, logo
+site/                  website (GitHub Pages): landing page with an interactive Dock demo, download, privacy, imprint
+scripts/               publish-site.sh
 ```
+
+## Icon
+
+`DockPeek/Resources/AppIcon.icon` (Icon Composer): three windows fanning out of a Dock icon on graphite, as layered SVGs (back windows, front window, Dock icon); glass, dark and tinted variants come from the system. A flat version for the website is `docs/logo.svg`.
+
+## Website
+
+`site/` is published to https://iamginsley.github.io/DockPeek/ from the `gh-pages` branch: merge site changes, then run `scripts/publish-site.sh` on main. The download page fetches the latest release from the GitHub API and shows „Bald verfügbar“ until a release with `DockPeek.dmg` exists. Preview locally with `python3 -m http.server --directory site`.
 
 ## Build
 

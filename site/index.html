@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DockPeek</title>
+  <meta name="description" content="DockPeek bringt die Fenster-Vorschau der Windows-Taskleiste ins Mac-Dock: Fahr über ein Programm und sieh alle seine Fenster. Mit Aero Peek und Klick zum Minimieren.">
+  <meta property="og:title" content="DockPeek">
+  <meta property="og:description" content="Alle Fenster. Ein Blick. Kostenlos für macOS.">
+  <meta property="og:image" content="assets/icon-512.png">
+  <meta name="theme-color" content="#08080a">
+  <link rel="icon" href="assets/icon-64.png">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav" aria-label="Hauptnavigation">
+    <div class="wrap">
+      <a class="brand" href="#top"><img src="assets/icon-64.png" alt=""> DockPeek</a>
+      <a class="button small" href="download.html">Laden</a>
+    </div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <div class="wrap">
+        <h1>Alle Fenster.<br><span>Ein Blick ins Dock.</span></h1>
+        <p class="lead">DockPeek bringt die Fenster-Vorschau aus der Windows-Taskleiste auf den Mac. Fahr über ein Programm im Dock und sieh sofort alle seine Fenster, auch die minimierten.</p>
+        <div class="cta">
+          <a class="button" href="download.html">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 14h12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Kostenlos laden
+          </a>
+          <a class="button secondary" href="#funktionen">Funktionen ansehen</a>
+        </div>
+        <p class="meta">Für macOS 26 oder neuer · Apple Silicon und Intel</p>
+
+        <div class="screen" id="screen" aria-label="Ausprobieren: ein Schreibtisch mit Dock, auf dem DockPeek läuft">
+          <div class="menubar" aria-hidden="true">
+            <div class="left"><b id="menu-app">Browser</b><span class="hide-sm">Ablage</span><span class="hide-sm">Bearbeiten</span><span class="hide-sm">Fenster</span></div>
+            <div class="right">
+              <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="10" height="8" rx="2"/><rect x="7" y="5" width="10" height="8" rx="2" fill="currentColor" fill-opacity=".25"/></svg>
+              <span class="hide-sm">Di. 25. Nov.</span><span>9:41</span>
+            </div>
+          </div>
+
+          <p class="desk-hint" aria-hidden="true"><span class="mouse">Fahr über ein Programm im Dock.</span><span class="touch">Tipp auf ein Programm im Dock.</span></p>
+
+          <!-- Windows: data-app links each to its Dock icon. -->
+          <div class="win" id="w-notes-1" data-app="notes" data-title="Einkaufsliste" style="--x:6%;--y:15%;--w:32%;--h:52%;--c:var(--yellow);--ox:120%">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="page"><div class="line head"></div><div class="line" style="width:80%"></div><div class="line" style="width:62%"></div><div class="line" style="width:74%"></div><div class="line" style="width:50%"></div><div class="line" style="width:68%"></div></div>
+          </div>
+          <div class="win" id="w-notes-2" data-app="notes" data-title="Ideen für DockPeek" style="--x:20%;--y:27%;--w:28%;--h:46%;--c:var(--yellow);--ox:90%">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="page"><div class="line head" style="width:60%"></div><div class="line" style="width:70%"></div><div class="line" style="width:84%"></div><div class="line" style="width:40%"></div></div>
+          </div>
+          <div class="win" id="w-mail-1" data-app="mail" data-title="Posteingang" style="--x:56%;--y:30%;--w:34%;--h:44%;--c:var(--pink);--ox:-10%">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="page"><div class="line head" style="width:36%"></div><div class="line" style="width:90%"></div><div class="line" style="width:90%"></div><div class="line" style="width:90%"></div><div class="line" style="width:56%"></div></div>
+          </div>
+          <div class="win min" id="w-web-2" data-app="web" data-title="Urlaub am Gardasee" style="--x:30%;--y:18%;--w:42%;--h:56%;--c:#30d158;--ox:60%">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="page"><div class="block"></div><div class="line" style="width:80%"></div><div class="line" style="width:64%"></div></div>
+          </div>
+          <div class="win" id="w-web-1" data-app="web" data-title="DockPeek – Fenster-Vorschau" style="--x:42%;--y:12%;--w:46%;--h:60%;--c:var(--sand);--ox:20%">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="page"><div class="line head"></div><div class="block"></div><div class="line" style="width:86%"></div><div class="line" style="width:70%"></div></div>
+          </div>
+
+          <div class="frost" aria-hidden="true"></div>
+
+          <div class="preview" id="preview" role="group" aria-label="Fenster-Vorschau"></div>
+
+          <nav class="dock" aria-label="Dock">
+            <button class="app" data-app="notes" data-name="Notizen" style="--c:linear-gradient(#ffd60a,#ff9f0a)" aria-label="Notizen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M6 7h12M6 12h12M6 17h7"/></svg>
+            </button>
+            <button class="app" data-app="web" data-name="Browser" style="--c:linear-gradient(#5ac8fa,#0a84ff)" aria-label="Browser">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.6 2.5 13.4 0 16M12 4c-2.5 2.6-2.5 13.4 0 16"/></svg>
+            </button>
+            <button class="app" data-app="mail" data-name="Post" style="--c:linear-gradient(#ff6b8b,#ff375f)" aria-label="Post">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="m4 8 8 6 8-6"/></svg>
+            </button>
+            <button class="app" data-app="term" data-name="Terminal" style="--c:linear-gradient(#48484a,#1c1c1e)" aria-label="Terminal, keine Fenster offen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 9 3 3-3 3M12 15h5"/></svg>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <section id="funktionen">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Funktionen</p>
+          <h2>Das Beste aus Windows, im Dock.</h2>
+          <p>Kleine Handgriffe, die man von der Taskleiste kennt und am Mac vermisst. Jede Funktion lässt sich einzeln ein- und ausschalten.</p>
+        </div>
+
+        <div class="grid">
+          <article class="card wide">
+            <div class="icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1.5" y="3" width="7.5" height="6" rx="1.5"/><rect x="11" y="3" width="7.5" height="6" rx="1.5"/><rect x="7" y="13" width="6" height="5" rx="1.5"/></svg></div>
+            <h3>Fenster-Vorschau</h3>
+            <p>Fahr über ein Programm im Dock und alle seine Fenster erscheinen als Vorschaubilder darüber. Ein Klick holt genau dieses Fenster nach vorn, auch wenn es minimiert war. Mit dem Dock unten, links oder rechts und auf mehreren Bildschirmen.</p>
+          </article>
+          <article class="card">
+            <div class="icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/><circle cx="10" cy="10" r="2.5"/></svg></div>
+            <h3>Aero Peek</h3>
+            <p>Bleib kurz auf einem Vorschaubild: Alles andere tritt milchig in den Hintergrund, und du siehst nur dieses Fenster an seinem Platz.</p>
+          </article>
+          <article class="card">
+            <div class="icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2.5" width="14" height="10" rx="2"/><path d="M10 15v3m-3-3 3 3 3-3"/></svg></div>
+            <h3>Klick minimiert</h3>
+            <p>Ein Klick auf das Programm im Vordergrund legt sein Fenster ins Dock. Ein zweiter Klick holt es zurück. Wie bei Windows.</p>
+          </article>
+          <article class="card">
+            <div class="icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="1.5" width="10" height="17" rx="5"/><path d="M10 5v4"/></svg></div>
+            <h3>Mittelklick schließt</h3>
+            <p>Mit der mittleren Maustaste auf ein Vorschaubild, und das Fenster ist zu. Ungesicherte Änderungen fragt die App vorher ab.</p>
+          </article>
+          <article class="card">
+            <div class="icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="16" height="11" rx="2"/><path d="M6 17.5h8"/><path d="M6 10.5l3-3 2 2 3-3" stroke-linejoin="round"/></svg></div>
+            <h3>Auch minimiert mit Inhalt</h3>
+            <p>Minimierte Fenster zeigen ihren letzten Inhalt statt nur ein Symbol. So findest du das richtige auf einen Blick.</p>
+          </article>
+          <article class="card full">
+            <div class="icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h8M15 5h2M3 10h2M9 10h8M3 15h10M17 15h0"/><circle cx="13" cy="5" r="2"/><circle cx="7" cy="10" r="2"/><circle cx="15" cy="15" r="2"/></svg></div>
+            <h3>So, wie du es magst</h3>
+            <p>Größe der Vorschaubilder und Verzögerung stellst du selbst ein, jede Funktion hat ihren eigenen Schalter.</p>
+          </article>
+        </div>
+
+        <div class="showcase" style="margin-top:16px">
+          <figure>
+            <img src="assets/settings-preview.png" alt="Einstellungen, Tab Vorschau: Fenster-Vorschau, Größe der Vorschaubilder, Verzögerung, Aero Peek und Inhalt minimierter Fenster, jeweils mit Schalter" width="410" height="438" loading="lazy">
+            <figcaption>Vorschau: Größe, Verzögerung, Aero Peek</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/settings-clicks.png" alt="Einstellungen, Tab Klicks: Klick minimiert und Mittelklick schließt, jeweils mit Schalter" width="410" height="438" loading="lazy">
+            <figcaption>Klicks: jede Funktion einzeln schaltbar</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="privacy">
+          <p class="eyebrow">Datenschutz</p>
+          <h2>Nichts verlässt deinen Mac.</h2>
+          <p>Kein Konto, kein Server, kein Tracking, keine Werbung. Die Vorschaubilder entstehen auf deinem Mac und bleiben nur im Arbeitsspeicher. <a href="datenschutz.html">Datenschutzerklärung lesen</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Installieren</p>
+          <h2>In einer Minute eingerichtet.</h2>
+        </div>
+        <ol class="steps">
+          <li><h3>Laden</h3><p>Lade die DMG herunter und öffne sie mit einem Doppelklick.</p></li>
+          <li><h3>Reinziehen</h3><p>Zieh DockPeek in den Ordner „Programme“ und starte es.</p></li>
+          <li><h3>Erlauben</h3><p>Gib „Bedienungshilfen“ und „Bildschirmaufnahme“ frei. DockPeek führt dich in der Menüleiste dorthin.</p></li>
+        </ol>
+        <div class="final">
+          <img src="assets/icon-512.png" alt="DockPeek App-Symbol" width="96" height="96">
+          <h2>DockPeek</h2>
+          <p class="meta" style="margin:0 0 24px">Kostenlos · macOS 26 oder neuer</p>
+          <a class="button" href="download.html">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 14h12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Für Mac laden
+          </a>
+          <p class="meta">Signiert und von Apple notarisiert.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap faq">
+        <div class="section-head"><p class="eyebrow">Fragen</p><h2>Gut zu wissen</h2></div>
+        <details>
+          <summary>Warum gibt es DockPeek nicht im App Store?</summary>
+          <p>Um das Dock zu beobachten und Fenster anderer Apps nach vorn zu holen, braucht DockPeek die „Bedienungshilfen“. Apps im Mac App Store dürfen das nicht. Deshalb gibt es DockPeek direkt hier, mit einer Developer ID signiert und von Apple auf Schadsoftware geprüft (notarisiert). Es öffnet sich ohne Warnung.</p>
+        </details>
+        <details>
+          <summary>Wofür braucht DockPeek die beiden Freigaben?</summary>
+          <p><b>Bedienungshilfen:</b> um zu erkennen, über welchem Programm im Dock die Maus ist, und um Fenster nach vorn zu holen, zu minimieren oder zu schließen. <b>Bildschirmaufnahme:</b> für die Vorschaubilder und Aero Peek. Ohne sie zeigt DockPeek Fenstertitel mit App-Symbol. Die Bilder bleiben im Arbeitsspeicher und werden nie gespeichert oder gesendet.</p>
+        </details>
+        <details>
+          <summary>Sehe ich auch Fenster auf anderen Schreibtischen?</summary>
+          <p>Noch nicht. DockPeek zeigt die Fenster des aktuellen Schreibtischs und alle minimierten Fenster. Fenster auf anderen Schreibtischen und im Vollbild kommen in einer späteren Version.</p>
+        </details>
+        <details>
+          <summary>Kostet die App etwas?</summary>
+          <p>Nein. DockPeek ist kostenlos und ohne Werbung.</p>
+        </details>
+        <details>
+          <summary>Wie werde ich die App wieder los?</summary>
+          <p>Beende sie über das Symbol in der Menüleiste und zieh sie aus „Programme“ in den Papierkorb. Wenn du „Beim Anmelden starten“ eingeschaltet hattest, entfernt macOS den Eintrag automatisch.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© 2026 Dominik Gintsberger</span>
+      <span><a href="datenschutz.html">Datenschutz</a><a href="impressum.html">Impressum</a><a href="mailto:dominik.gintsberger@outlook.de">Kontakt</a></span>
+    </div>
+  </footer>
+
+  <script src="demo.js"></script>
+</body>
+</html>
