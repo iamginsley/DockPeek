@@ -5,13 +5,15 @@ import Observation
 @Observable
 final class SettingsViewModel {
     var preview: PreviewViewModel
+    var minimizer: ClickToMinimize
     private(set) var hasAccessibility = PermissionService.hasAccessibility
     private(set) var hasScreenRecording = PermissionService.hasScreenRecording
     private(set) var launchAtLogin = LoginItemService.isEnabled
     private(set) var errorMessage: String?
 
-    init(preview: PreviewViewModel) {
+    init(preview: PreviewViewModel, minimizer: ClickToMinimize) {
         self.preview = preview
+        self.minimizer = minimizer
     }
 
     func refresh() {

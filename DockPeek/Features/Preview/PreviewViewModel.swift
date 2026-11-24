@@ -23,7 +23,7 @@ final class PreviewViewModel {
     }
 
     @ObservationIgnored private let defaults = UserDefaults.standard
-    @ObservationIgnored private let dock = DockObserver()
+    @ObservationIgnored private let dock: DockObserver
     @ObservationIgnored private let thumbnailService = ThumbnailService()
     @ObservationIgnored private let panel = PreviewPanel()
     @ObservationIgnored private var item: DockItem?
@@ -36,6 +36,10 @@ final class PreviewViewModel {
     @ObservationIgnored private var isDemo = false
 
     private static let enabledKey = "previewEnabled"
+
+    init(dock: DockObserver) {
+        self.dock = dock
+    }
 
     /// Starts watching the Dock once Accessibility is granted.
     func start() {

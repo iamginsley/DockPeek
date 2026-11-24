@@ -5,8 +5,10 @@ struct DockPeekApp: App {
     @State private var settings: SettingsViewModel
 
     init() {
-        let preview = PreviewViewModel()
-        _settings = State(initialValue: SettingsViewModel(preview: preview))
+        let dock = DockObserver()
+        let preview = PreviewViewModel(dock: dock)
+        let minimizer = ClickToMinimize(dock: dock)
+        _settings = State(initialValue: SettingsViewModel(preview: preview, minimizer: minimizer))
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-DockPeekDemo") {
             DispatchQueue.main.async { preview.showDemo() }
@@ -21,6 +23,7 @@ struct DockPeekApp: App {
         }
         #endif
         preview.start()
+        minimizer.start()
     }
 
     var body: some Scene {

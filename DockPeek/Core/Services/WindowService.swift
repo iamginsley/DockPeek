@@ -27,6 +27,21 @@ enum WindowService {
         }
     }
 
+    /// The app's focused (or main) window, if it is a standard window that is open right now.
+    static func openFrontWindow(of app: NSRunningApplication) -> AXUIElement? {
+        let element = AXUIElementCreateApplication(app.processIdentifier)
+        guard let window = AX.attribute(element, kAXFocusedWindowAttribute, as: AXUIElement.self)
+                ?? AX.attribute(element, kAXMainWindowAttribute, as: AXUIElement.self),
+              AX.attribute(window, kAXMinimizedAttribute, as: Bool.self) == false,
+              AX.attribute(window, kAXSubroleAttribute, as: String.self) == kAXStandardWindowSubrole
+        else { return nil }
+        return window
+    }
+
+    static func minimize(_ window: AXUIElement) {
+        AX.set(window, kAXMinimizedAttribute, kCFBooleanTrue)
+    }
+
     /// Brings the window to the front, restoring it from the Dock if it was minimized.
     static func focus(_ window: AppWindow, of app: NSRunningApplication) {
         guard let element = window.element else { return }

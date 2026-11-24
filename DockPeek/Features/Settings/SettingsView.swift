@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// The menu bar panel: one switch, the two permissions, launch at login and quit.
+/// The menu bar panel: feature switches, the two permissions, launch at login and quit.
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            features
 
             if !viewModel.hasAccessibility {
                 PermissionRow(
@@ -34,28 +35,31 @@ struct SettingsView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("DockPeek")
-                    .font(.headline)
-                Text(status)
+        VStack(alignment: .leading, spacing: 2) {
+            Text("DockPeek")
+                .font(.headline)
+            if !viewModel.hasAccessibility {
+                Text("Wartet auf Zugriff")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 8)
-            Toggle("Fenster-Vorschau", isOn: $viewModel.preview.isEnabled)
-                .toggleStyle(.switch)
-                .labelsHidden()
-                .disabled(!viewModel.hasAccessibility)
         }
     }
 
-    private var status: String {
-        if !viewModel.hasAccessibility { return "Wartet auf Zugriff" }
-        return viewModel.preview.isEnabled
-            ? "Zeigt die Fenster, wenn du über ein Dock-Symbol fährst."
-            : "Fenster-Vorschau ist aus."
+    private var features: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            FeatureToggle(
+                title: "Fenster-Vorschau",
+                detail: "Zeigt alle Fenster einer App, wenn du über ihr Dock-Symbol fährst.",
+                isOn: $viewModel.preview.isEnabled
+            )
+            FeatureToggle(
+                title: "Klick minimiert",
+                detail: "Ein Klick auf das Symbol der App im Vordergrund minimiert ihr Fenster.",
+                isOn: $viewModel.minimizer.isEnabled
+            )
+        }
+        .disabled(!viewModel.hasAccessibility)
     }
 
     private var footer: some View {
@@ -76,6 +80,25 @@ struct SettingsView: View {
                     .foregroundStyle(.red)
             }
         }
+    }
+}
+
+private struct FeatureToggle: View {
+    let title: String
+    let detail: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .toggleStyle(.switch)
     }
 }
 
