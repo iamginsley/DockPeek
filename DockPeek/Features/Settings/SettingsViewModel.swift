@@ -4,16 +4,16 @@ import Observation
 @MainActor
 @Observable
 final class SettingsViewModel {
-    var preview: PreviewViewModel
-    var minimizer: ClickToMinimize
+    var preferences: Preferences
+    let preview: PreviewViewModel
     private(set) var hasAccessibility = PermissionService.hasAccessibility
     private(set) var hasScreenRecording = PermissionService.hasScreenRecording
     private(set) var launchAtLogin = LoginItemService.isEnabled
     private(set) var errorMessage: String?
 
-    init(preview: PreviewViewModel, minimizer: ClickToMinimize) {
+    init(preferences: Preferences, preview: PreviewViewModel) {
+        self.preferences = preferences
         self.preview = preview
-        self.minimizer = minimizer
     }
 
     func refresh() {
@@ -29,6 +29,18 @@ final class SettingsViewModel {
 
     func requestScreenRecording() {
         PermissionService.requestScreenRecording()
+    }
+
+    /// Call after a setting changed that the preview has to act on right away.
+    func preferencesChanged() {
+        preview.applyPreferences()
+    }
+
+    var version: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "Version \(version) (\(build))"
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {

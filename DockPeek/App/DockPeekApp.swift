@@ -3,12 +3,15 @@ import SwiftUI
 @main
 struct DockPeekApp: App {
     @State private var settings: SettingsViewModel
+    private let minimizer: ClickToMinimize
 
     init() {
+        let preferences = Preferences()
         let dock = DockObserver()
-        let preview = PreviewViewModel(dock: dock)
-        let minimizer = ClickToMinimize(dock: dock)
-        _settings = State(initialValue: SettingsViewModel(preview: preview, minimizer: minimizer))
+        let preview = PreviewViewModel(dock: dock, preferences: preferences)
+        let minimizer = ClickToMinimize(dock: dock, preferences: preferences)
+        self.minimizer = minimizer
+        _settings = State(initialValue: SettingsViewModel(preferences: preferences, preview: preview))
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-DockPeekDemo") {
             DispatchQueue.main.async { preview.showDemo() }
@@ -27,9 +30,33 @@ struct DockPeekApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("DockPeek", systemImage: "rectangle.on.rectangle") {
-            SettingsView(viewModel: settings)
+        MenuBarExtra {
+            MenuBarView(viewModel: settings)
+        } label: {
+            MenuBarLabel()
         }
         .menuBarExtraStyle(.window)
+
+        Settings {
+            SettingsWindow(viewModel: settings)
+        }
+    }
+}
+
+private struct MenuBarLabel: View {
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Image(systemName: "rectangle.on.rectangle")
+            .accessibilityLabel("DockPeek")
+            .onAppear {
+                #if DEBUG
+                // -DockPeekSettings <page>: opens the settings at launch, for screenshots.
+                if ProcessInfo.processInfo.arguments.contains("-DockPeekSettings") {
+                    openSettings()
+                    NSApp.activate()
+                }
+                #endif
+            }
     }
 }

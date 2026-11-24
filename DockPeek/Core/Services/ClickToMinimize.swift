@@ -1,6 +1,5 @@
 import AppKit
 import ApplicationServices
-import Observation
 
 /// Clicking the Dock icon of the app that is already in front minimizes its front window,
 /// like clicking the active app in the Windows taskbar. A second click restores it (the Dock
@@ -10,29 +9,22 @@ import Observation
 /// moment of the press: the app must have been in front before the press (not brought there
 /// by this click), and its front window must have been open (not one the Dock is restoring).
 @MainActor
-@Observable
 final class ClickToMinimize {
     /// Moving further than this between press and release counts as dragging the icon.
     static let dragTolerance: CGFloat = 5
 
-    var isEnabled: Bool {
-        get { access(keyPath: \.isEnabled); return defaults.object(forKey: Self.enabledKey) as? Bool ?? true }
-        set { withMutation(keyPath: \.isEnabled) { defaults.set(newValue, forKey: Self.enabledKey) } }
-    }
-
-    @ObservationIgnored private let dock: DockObserver
-    @ObservationIgnored private let defaults = UserDefaults.standard
-    @ObservationIgnored private var monitor: Any?
-    @ObservationIgnored private var activationObserver: NSObjectProtocol?
+    private let dock: DockObserver
+    private let preferences: Preferences
+    private var monitor: Any?
+    private var activationObserver: NSObjectProtocol?
     /// When the frontmost app came to the front, in system uptime (same clock as event timestamps).
-    @ObservationIgnored private var frontmostSince: (pid: pid_t, uptime: TimeInterval)?
+    private var frontmostSince: (pid: pid_t, uptime: TimeInterval)?
     /// The window to minimize, chosen at press time.
-    @ObservationIgnored private var pressed: (app: NSRunningApplication, window: AXUIElement, location: CGPoint)?
+    private var pressed: (app: NSRunningApplication, window: AXUIElement, location: CGPoint)?
 
-    private static let enabledKey = "clickToMinimizeEnabled"
-
-    init(dock: DockObserver) {
+    init(dock: DockObserver, preferences: Preferences) {
         self.dock = dock
+        self.preferences = preferences
     }
 
     func start() {
@@ -58,7 +50,7 @@ final class ClickToMinimize {
     }
 
     private func handle(_ type: NSEvent.EventType, at timestamp: TimeInterval) {
-        guard isEnabled else { return }
+        guard preferences.isClickToMinimizeEnabled else { return }
         let location = NSEvent.mouseLocation
         switch type {
         case .leftMouseDown:

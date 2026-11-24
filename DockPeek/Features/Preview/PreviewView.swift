@@ -5,8 +5,10 @@ struct PreviewContent {
     var appIcon: NSImage?
     var rows: [[AppWindow]]
     var thumbnails: [CGWindowID: NSImage]
+    /// Largest thumbnail, in points.
+    var box: CGSize
 
-    @MainActor static let empty = PreviewContent(appIcon: nil, rows: [], thumbnails: [:])
+    @MainActor static let empty = PreviewContent(appIcon: nil, rows: [], thumbnails: [:], box: ThumbnailSize.medium.box)
 }
 
 /// Window thumbnails above a Dock icon, like the taskbar previews in Windows.
@@ -18,28 +20,27 @@ struct PreviewView: View {
     /// Reports the window under the pointer, so a middle-click can close it.
     var onHover: (CGWindowID, Bool) -> Void = { _, _ in }
 
-    /// Largest thumbnail, in points.
-    static let thumbnailBox = CGSize(width: 220, height: 140)
     static let cardPadding: CGFloat = 8
     static let spacing: CGFloat = 4
     static let minimumCardWidth: CGFloat = 150
 
-    static func thumbnailSize(for window: AppWindow) -> CGSize {
-        PreviewLayout.thumbnailSize(for: window.size, in: thumbnailBox)
+    static func thumbnailSize(for window: AppWindow, in box: CGSize) -> CGSize {
+        PreviewLayout.thumbnailSize(for: window.size, in: box)
     }
 
-    static func cardWidth(for window: AppWindow) -> CGFloat {
-        max(thumbnailSize(for: window).width, minimumCardWidth) + cardPadding * 2
+    static func cardWidth(for window: AppWindow, in box: CGSize) -> CGFloat {
+        // Small thumbnails still leave room for a readable title.
+        max(thumbnailSize(for: window, in: box).width, min(minimumCardWidth, box.width)) + cardPadding * 2
     }
 
     /// Splits windows into rows that fit `maxWidth`, so many windows wrap instead of
     /// running off the screen.
-    static func rows(for windows: [AppWindow], maxWidth: CGFloat) -> [[AppWindow]] {
+    static func rows(for windows: [AppWindow], in box: CGSize, maxWidth: CGFloat) -> [[AppWindow]] {
         var rows: [[AppWindow]] = []
         var row: [AppWindow] = []
         var width = spacing * 2
         for window in windows {
-            let cardWidth = cardWidth(for: window)
+            let cardWidth = cardWidth(for: window, in: box)
             if !row.isEmpty, width + spacing + cardWidth > maxWidth {
                 rows.append(row)
                 row = []
@@ -59,6 +60,7 @@ struct PreviewView: View {
                     ForEach(content.rows[index]) { window in
                         WindowCard(
                             window: window,
+                            box: content.box,
                             thumbnail: content.thumbnails[window.id],
                             appIcon: content.appIcon,
                             onFocus: { onFocus(window) },
@@ -77,6 +79,7 @@ struct PreviewView: View {
 
 private struct WindowCard: View {
     let window: AppWindow
+    let box: CGSize
     let thumbnail: NSImage?
     let appIcon: NSImage?
     let onFocus: () -> Void
@@ -87,7 +90,7 @@ private struct WindowCard: View {
     @State private var isCloseHovered = false
 
     var body: some View {
-        let size = PreviewView.thumbnailSize(for: window)
+        let size = PreviewView.thumbnailSize(for: window, in: box)
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 if let appIcon {
@@ -108,7 +111,7 @@ private struct WindowCard: View {
                 .frame(maxWidth: .infinity)
         }
         .padding(PreviewView.cardPadding)
-        .frame(width: PreviewView.cardWidth(for: window))
+        .frame(width: PreviewView.cardWidth(for: window, in: box))
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(isHovered ? AnyShapeStyle(.fill.secondary) : AnyShapeStyle(.clear))

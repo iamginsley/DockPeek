@@ -60,10 +60,13 @@ struct PreviewLayoutTests {
             AppWindow(id: id, title: "\(id)", size: CGSize(width: 1440, height: 900), isMinimized: false, element: nil)
         }
         let windows = (1...5).map(window)
-        let cardWidth = PreviewView.cardWidth(for: windows[0])
+        let box = ThumbnailSize.medium.box
+        let cardWidth = PreviewView.cardWidth(for: windows[0], in: box)
         let maxWidth = PreviewView.spacing * 2 + cardWidth * 2 + PreviewView.spacing
-        let rows = PreviewView.rows(for: windows, maxWidth: maxWidth)
+        let rows = PreviewView.rows(for: windows, in: box, maxWidth: maxWidth)
         #expect(rows.map(\.count) == [2, 2, 1])
-        #expect(PreviewView.rows(for: windows, maxWidth: 10_000).map(\.count) == [5])
+        #expect(PreviewView.rows(for: windows, in: box, maxWidth: 10_000).map(\.count) == [5])
+        // Larger thumbnails wrap sooner.
+        #expect(PreviewView.rows(for: windows, in: ThumbnailSize.large.box, maxWidth: maxWidth).map(\.count) == [1, 1, 1, 1, 1])
     }
 }
