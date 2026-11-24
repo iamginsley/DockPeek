@@ -43,6 +43,7 @@ targets:
         # so DockPeek ships outside the Mac App Store (Developer ID, notarized).
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 
   DockPeekTests:

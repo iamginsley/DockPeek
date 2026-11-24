@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <g transform="scale(1.24272) translate(-100 -100)">
+    <path fill-rule="evenodd" fill="#F2F2F7" d="M462 640 h100 a50 50 0 0 1 50 50 v100 a50 50 0 0 1 -50 50 h-100 a50 50 0 0 1 -50 -50 v-100 a50 50 0 0 1 50 -50 z M482 680 h60 a30 30 0 0 1 30 30 v60 a30 30 0 0 1 -30 30 h-60 a30 30 0 0 1 -30 -30 v-60 a30 30 0 0 1 30 -30 z"/>
+    <circle cx="512" cy="868" r="9" fill="#F2F2F7"/>
+  </g>
+</svg>
