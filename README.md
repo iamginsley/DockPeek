@@ -1,1 +1,45 @@
 # DockPeek
+
+Menu bar app for macOS that brings the Windows taskbar's window previews to the Dock: hover over an app icon and DockPeek shows all of that app's windows as thumbnails. Click one to bring it forward (minimized windows are restored), × closes it.
+
+## How it works
+
+- `DockObserver` watches the Dock through Accessibility. The Dock marks the icon under the pointer as the selected child of its icon list and posts `kAXSelectedChildrenChangedNotification`, so there is no mouse polling while idle.
+- `WindowService` lists the app's standard windows (`kAXWindowsAttribute`, current Space, minimized included) and maps them to window server IDs with `_AXUIElementGetWindow`.
+- `ThumbnailService` captures thumbnails with ScreenCaptureKit and keeps the last image per window, so minimized windows still show their content once seen.
+- `PreviewPanel` is a non-activating, borderless panel above the Dock level; the app in front keeps focus. While it is visible a 30 Hz timer hides it once the pointer has left the icon and the panel for 250 ms; any click elsewhere dismisses it.
+- `PreviewLayout` (pure, unit-tested) finds the Dock edge and places the panel above or beside the icon, kept on screen.
+
+Permissions: **Accessibility** (required; picked up without a restart) and **Screen Recording** (thumbnails; without it the preview shows titles and app icons). Both make the App Sandbox and the Mac App Store impossible, so DockPeek ships signed with Developer ID and notarized.
+
+Known limits of v0.1: windows on other Spaces are not listed (Accessibility only returns the current Space).
+
+## Design
+
+Clean like Apple's own utilities. The preview uses Liquid Glass (`glassEffect`) since it floats; cards highlight on hover, the close button turns red on hover like in Windows. Colors are system colors; accent is system blue.
+
+## Project structure
+
+```
+DockPeek/
+  App/                 app entry, MenuBarExtra
+  Core/Models/         AppWindow, DockItem, PreviewLayout (pure logic)
+  Core/Services/       Accessibility helpers, Dock observer, windows, thumbnails, permissions, login item
+  Core/Demo/           sample windows for -DockPeekDemo (Debug only)
+  Features/Preview/    preview panel, view, view model
+  Features/Settings/   menu bar panel
+  Resources/           assets, Info.plist, privacy manifest
+DockPeekTests/         layout tests
+docs/                  privacy policy
+```
+
+## Build
+
+```sh
+xcodegen generate
+open DockPeek.xcodeproj
+```
+
+Tests: `xcodebuild -project DockPeek.xcodeproj -scheme DockPeek test`
+
+Demo (Debug): launch with `-DockPeekDemo` to show sample previews above the bottom center of the main screen.
