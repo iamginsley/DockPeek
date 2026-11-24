@@ -1,6 +1,6 @@
 # DockPeek
 
-Menu bar app for macOS that brings the Windows taskbar's window previews to the Dock: hover over an app icon and DockPeek shows all of that app's windows as thumbnails. Click one to bring it forward (minimized windows are restored), × closes it.
+Menu bar app for macOS that brings the Windows taskbar's window previews to the Dock: hover over an app icon and DockPeek shows all of that app's windows as thumbnails. Click one to bring it forward (minimized windows are restored), × or a middle-click closes it. Clicking the Dock icon of the app already in front minimizes its front window, like the Windows taskbar.
 
 ## How it works
 
@@ -8,6 +8,7 @@ Menu bar app for macOS that brings the Windows taskbar's window previews to the 
 - `WindowService` lists the app's standard windows (`kAXWindowsAttribute`, current Space, minimized included) and maps them to window server IDs with `_AXUIElementGetWindow`.
 - `ThumbnailService` captures thumbnails with ScreenCaptureKit and keeps the last image per window, so minimized windows still show their content once seen.
 - `PreviewPanel` is a non-activating, borderless panel above the Dock level; the app in front keeps focus. While it is visible a 30 Hz timer hides it once the pointer has left the icon and the panel for 250 ms; any click elsewhere dismisses it.
+- `ClickToMinimize` watches clicks on the Dock and judges them by the state at press time (app was already in front, window was open), since global mouse events arrive late.
 - `PreviewLayout` (pure, unit-tested) finds the Dock edge and places the panel above or beside the icon, kept on screen.
 
 Permissions: **Accessibility** (required; picked up without a restart) and **Screen Recording** (thumbnails; without it the preview shows titles and app icons). Both make the App Sandbox and the Mac App Store impossible, so DockPeek ships signed with Developer ID and notarized.

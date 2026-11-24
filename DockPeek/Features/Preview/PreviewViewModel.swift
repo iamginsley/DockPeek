@@ -32,6 +32,8 @@ final class PreviewViewModel {
     @ObservationIgnored private var trackingTimer: Timer?
     @ObservationIgnored private var outsideSince: Date?
     @ObservationIgnored private var clickMonitor: Any?
+    @ObservationIgnored private var middleClickMonitor: Any?
+    @ObservationIgnored private var hoveredWindowID: CGWindowID?
     @ObservationIgnored private var accessTimer: Timer?
     @ObservationIgnored private var isDemo = false
 
@@ -120,7 +122,16 @@ final class PreviewViewModel {
         PreviewView(
             content: content,
             onFocus: { [weak self] window in self?.focus(window) },
-            onClose: { [weak self] window in self?.close(window) }
+            onClose: { [weak self] window in self?.close(window) },
+            onHover: { [weak self] id, isHovered in
+                guard let self else { return }
+                // Leaving one card and entering the next can arrive in either order.
+                if isHovered {
+                    self.hoveredWindowID = id
+                } else if self.hoveredWindowID == id {
+                    self.hoveredWindowID = nil
+                }
+            }
         )
     }
 
@@ -143,6 +154,14 @@ final class PreviewViewModel {
         }
     }
 
+    private func closeHoveredWindow() -> Bool {
+        guard let hoveredWindowID,
+              let window = content.rows.joined().first(where: { $0.id == hoveredWindowID })
+        else { return false }
+        close(window)
+        return true
+    }
+
     // MARK: - Tracking
 
     private func startTracking() {
@@ -150,6 +169,14 @@ final class PreviewViewModel {
         if trackingTimer == nil {
             trackingTimer = Timer.scheduledTimer(withTimeInterval: 1 / 30, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.track() }
+            }
+        }
+        if middleClickMonitor == nil {
+            // Middle-click on a thumbnail closes that window, like in the Windows taskbar.
+            middleClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .otherMouseDown) { [weak self] event in
+                guard event.buttonNumber == 2 else { return event }
+                let handled = MainActor.assumeIsolated { self?.closeHoveredWindow() ?? false }
+                return handled ? nil : event
             }
         }
         if clickMonitor == nil {
@@ -184,6 +211,9 @@ final class PreviewViewModel {
         trackingTimer = nil
         if let clickMonitor { NSEvent.removeMonitor(clickMonitor) }
         clickMonitor = nil
+        if let middleClickMonitor { NSEvent.removeMonitor(middleClickMonitor) }
+        middleClickMonitor = nil
+        hoveredWindowID = nil
         item = nil
         outsideSince = nil
         panel.hide()

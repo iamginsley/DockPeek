@@ -15,6 +15,8 @@ struct PreviewView: View {
     let content: PreviewContent
     let onFocus: (AppWindow) -> Void
     let onClose: (AppWindow) -> Void
+    /// Reports the window under the pointer, so a middle-click can close it.
+    var onHover: (CGWindowID, Bool) -> Void = { _, _ in }
 
     /// Largest thumbnail, in points.
     static let thumbnailBox = CGSize(width: 220, height: 140)
@@ -60,7 +62,8 @@ struct PreviewView: View {
                             thumbnail: content.thumbnails[window.id],
                             appIcon: content.appIcon,
                             onFocus: { onFocus(window) },
-                            onClose: { onClose(window) }
+                            onClose: { onClose(window) },
+                            onHover: { onHover(window.id, $0) }
                         )
                     }
                 }
@@ -78,6 +81,7 @@ private struct WindowCard: View {
     let appIcon: NSImage?
     let onFocus: () -> Void
     let onClose: () -> Void
+    let onHover: (Bool) -> Void
 
     @State private var isHovered = false
     @State private var isCloseHovered = false
@@ -110,7 +114,10 @@ private struct WindowCard: View {
                 .fill(isHovered ? AnyShapeStyle(.fill.secondary) : AnyShapeStyle(.clear))
         )
         .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .onHover { isHovered = $0 }
+        .onHover { hovering in
+            isHovered = hovering
+            onHover(hovering)
+        }
         .onTapGesture(perform: onFocus)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(window.isMinimized ? "\(window.title), minimiert" : window.title)
