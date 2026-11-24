@@ -173,16 +173,22 @@ final class PreviewViewModel {
     private func schedulePeek(at id: CGWindowID) {
         peekTask?.cancel()
         guard preferences.isPeekEnabled,
-              let window = content.rows.joined().first(where: { $0.id == id })
-        else { return }
+              let window = content.rows.joined().first(where: { $0.id == id }),
+              !window.isMinimized, window.frame != nil
+        else {
+            // A minimized window has no place on screen to show; frosting alone would be pointless.
+            peek.hide()
+            return
+        }
         peekTask = Task { [weak self] in
             // Already peeking: move to the next window without waiting again.
             if self?.peek.isVisible != true {
                 try? await Task.sleep(for: Self.peekDelay)
             }
             guard !Task.isCancelled, let self else { return }
-            let image = await self.thumbnailService.captureFullSize(window) ?? self.thumbnailService.cached(window.id)
+            let image = await self.thumbnailService.captureFullSize(window)
             guard !Task.isCancelled, self.hoveredWindowID == id, self.panel.isVisible else { return }
+            guard let image else { return self.peek.hide() }
             self.peek.show(image, frame: window.frame)
         }
     }

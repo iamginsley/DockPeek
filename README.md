@@ -10,7 +10,7 @@ Menu bar app for macOS that brings the Windows taskbar's window previews to the 
 - `PreviewPanel` is a non-activating, borderless panel above the Dock level; the app in front keeps focus. While it is visible a 30 Hz timer hides it once the pointer has left the icon and the panel for 250 ms; any click elsewhere dismisses it.
 - `ClickToMinimize` watches clicks on the Dock and judges them by the state at press time (app was already in front, window was open), since global mouse events arrive late.
 - `ThumbnailService` also captures the front app's windows every 3 s (setting „Inhalt minimierter Fenster zeigen“), so windows minimized later keep a recent thumbnail.
-- `PeekOverlay` (Aero Peek): after resting 0.4 s on a thumbnail, a frosted overlay right below the Dock level covers every screen and shows a full-size snapshot of that window at its real frame. macOS has no public API to fade other apps' windows, hence the snapshot.
+- `PeekOverlay` (Aero Peek): after resting 0.4 s on a thumbnail, a frosted overlay right below the Dock level covers every screen and shows a full-size snapshot of that window at its real frame. Minimized windows have no place on screen, so they get no peek. macOS has no public API to fade other apps' windows, hence the snapshot.
 - `Preferences` holds every setting (UserDefaults); the settings window (⌘,) has a switch per feature, plus thumbnail size and hover delay.
 - `PreviewLayout` (pure, unit-tested) finds the Dock edge and places the panel above or beside the icon, kept on screen.
 
