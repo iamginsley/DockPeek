@@ -15,31 +15,72 @@ final class DockObserver {
 
     private var observer: AXObserver?
     private var list: AXUIElement?
-    private var relaunchObserver: NSObjectProtocol?
+    private var appsObservation: NSKeyValueObservation?
+    /// The Dock process the observer belongs to, or is being attached to.
+    private var dockPID: pid_t?
+    private var reattachTask: Task<Void, Never>?
 
     private nonisolated static let dockBundleID = "com.apple.dock"
 
     func start() {
-        attach()
-        // The Dock restarts after some settings changes; attach to the new process.
-        relaunchObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main
-        ) { [weak self] note in
-            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-            guard app?.bundleIdentifier == Self.dockBundleID else { return }
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .seconds(1))
-                self?.attach()
-            }
+        reattach()
+        // The Dock restarts after some settings changes (and when it crashes). Its old
+        // Accessibility elements die with it, so attach to the new process. NSWorkspace posts
+        // no launch or terminate notifications for the Dock, but its running-app list changes.
+        appsObservation = NSWorkspace.shared.observe(\.runningApplications) { [weak self] _, _ in
+            Task { @MainActor [weak self] in self?.checkDockProcess() }
         }
     }
 
     func stop() {
+        reattachTask?.cancel()
+        reattachTask = nil
         detach()
-        if let relaunchObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(relaunchObserver)
+        appsObservation?.invalidate()
+        appsObservation = nil
+    }
+
+    /// Attaches to the Dock, retrying for a while: a freshly launched Dock needs a moment
+    /// before its icon list shows up in Accessibility.
+    func reattach() {
+        reattachTask?.cancel()
+        dockPID = Self.dockProcess()?.processIdentifier
+        reattachTask = Task { [weak self] in
+            for attempt in 1...Self.attachAttempts {
+                guard let self, !Task.isCancelled else { return }
+                if self.attach() {
+                    if attempt > 1 { log.info("Attached to Dock after \(attempt) attempts") }
+                    return
+                }
+                try? await Task.sleep(for: Self.attachRetryInterval)
+            }
+            log.error("Giving up attaching to the Dock")
+            // Try again on the next change to the running apps.
+            self?.dockPID = nil
         }
-        relaunchObserver = nil
+    }
+
+    static let attachAttempts = 20
+    static let attachRetryInterval: Duration = .milliseconds(500)
+
+    /// Reattaches when the Dock process is gone or a new one has started.
+    private func checkDockProcess() {
+        let pid = Self.dockProcess()?.processIdentifier
+        guard pid != dockPID else { return }
+        onHover?(nil)
+        if pid == nil {
+            log.info("Dock terminated")
+            reattachTask?.cancel()
+            detach()
+            dockPID = nil
+        } else {
+            log.info("Dock (re)started, attaching to the new process")
+            reattach()
+        }
+    }
+
+    private static func dockProcess() -> NSRunningApplication? {
+        NSRunningApplication.runningApplications(withBundleIdentifier: dockBundleID).first { !$0.isTerminated }
     }
 
     /// The app icon currently under the pointer, read straight from the Dock.
@@ -48,18 +89,20 @@ final class DockObserver {
         return AX.elements(list, kAXSelectedChildrenAttribute).first.flatMap(Self.item(for:))
     }
 
-    private func attach() {
+    /// Returns whether the observer is in place.
+    @discardableResult
+    private func attach() -> Bool {
         detach()
-        guard let dock = NSRunningApplication.runningApplications(withBundleIdentifier: Self.dockBundleID).first else {
+        guard let dock = Self.dockProcess() else {
             log.error("Dock process not found")
-            return
+            return false
         }
         let app = AXUIElementCreateApplication(dock.processIdentifier)
         guard let list = AX.elements(app, kAXChildrenAttribute).first(where: {
             AX.attribute($0, kAXRoleAttribute, as: String.self) == kAXListRole
         }) else {
             log.error("Dock icon list not found, trusted: \(AXIsProcessTrusted())")
-            return
+            return false
         }
 
         var observer: AXObserver?
@@ -72,14 +115,16 @@ final class DockObserver {
         let created = AXObserverCreate(dock.processIdentifier, callback, &observer)
         guard created == .success, let observer else {
             log.error("AXObserverCreate failed: \(created.rawValue)")
-            return
+            return false
         }
         let refcon = Unmanaged.passUnretained(self).toOpaque()
         let added = AXObserverAddNotification(observer, list, kAXSelectedChildrenChangedNotification as CFString, refcon)
         log.info("Attached to Dock list, add notification: \(added.rawValue)")
+        guard added == .success else { return false }
         CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
         self.observer = observer
         self.list = list
+        return true
     }
 
     private func detach() {
